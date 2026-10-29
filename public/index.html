@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Counter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+  <div class="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center shadow-xl">
+    <span class="text-xs uppercase tracking-widest text-zinc-400 font-semibold">Live Counter</span>
+    
+    <div id="counter-display" class="text-7xl font-mono font-bold my-6">...</div>
+    
+    <p class="text-xs text-zinc-500 mb-6">Updates automatically every 3 seconds</p>
+
+    <!-- Admin Panel -->
+    <div class="border-t border-zinc-800 pt-5 flex flex-col gap-3">
+      <input 
+        id="password-input" 
+        type="password" 
+        placeholder="Enter Admin Password" 
+        class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-center text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+      />
+
+      <div class="flex gap-2">
+        <button 
+          onclick="updateCounter('decrement')" 
+          class="flex-1 bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-xl font-bold py-2 rounded-lg transition"
+        >-</button>
+        <button 
+          onclick="updateCounter('increment')" 
+          class="flex-1 bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-xl font-bold py-2 rounded-lg transition"
+        >+</button>
+      </div>
+
+      <p id="status-msg" class="text-xs text-red-400 h-4"></p>
+    </div>
+  </div>
+
+  <script>
+    async function fetchCount() {
+      try {
+        const res = await fetch('/api/count');
+        const data = await res.json();
+        document.getElementById('counter-display').textContent = data.count;
+      } catch (err) {
+        console.error("Failed to load counter", err);
+      }
+    }
+
+    async function updateCounter(action) {
+      const password = document.getElementById('password-input').value;
+      const status = document.getElementById('status-msg');
+
+      if (!password) {
+        status.textContent = "Please enter password";
+        return;
+      }
+
+      status.textContent = "";
+
+      try {
+        const res = await fetch('/api/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, password })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('counter-display').textContent = data.count;
+          status.classList.remove('text-red-400');
+          status.classList.add('text-green-400');
+          status.textContent = "Updated successfully";
+        } else {
+          status.classList.remove('text-green-400');
+          status.classList.add('text-red-400');
+          status.textContent = data.error || "Failed to update";
+        }
+      } catch (err) {
+        status.textContent = "Network error";
+      }
+    }
+
+    fetchCount();
+    setInterval(fetchCount, 3000);
+  </script>
+</body>
+</html>
